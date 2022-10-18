@@ -23,7 +23,9 @@ model_vect = pickle.load(open('modele_vect_tfidf.sav', 'rb'))
 lemmatizer = WordNetLemmatizer()
 labels = pd.read_csv('labels.csv').values.squeeze().tolist()	
 
-#Nettoyage des données
+#----------------------------------------------------------------------------------------------------------------------#
+
+#Nettoyage du document
 
 def clean_fct(doc) :									
 	doc = BeautifulSoup(doc).get_text()				#suppression des balises html
@@ -46,37 +48,29 @@ def clean_fct(doc) :
 	for w in doc :
 		doc_lem.append(lemmatizer.lemmatize(w))									
     
-	doc = [*doc, *doc_tags]						#réintégration des mots tags
+	doc = [*doc, *doc_tags]								#réintégration des mots tags
     
-	dico_doc = {}							#creation d'un dictionnaire pour le comptage des mots
+	dico_doc = {}										#creation d'un dictionnaire pour le comptage des mots
 	for w in doc :
 		if w in dico_doc :
 			dico_doc[w] += 1
 		else :
 			dico_doc[w] = 1
     
-	min_freq_w = []							#creation de la liste des mots les moins fréquents
+	min_freq_w = []										#creation de la liste des mots les moins fréquents
 	for w in dico_doc :
 		if dico_doc[w] < 3 :
 			min_freq_w.append(w)
     
-	doc = [w for w in doc if w not in min_freq_w]			#suppression des mots à faible occurence
+	doc = [w for w in doc if w not in min_freq_w]		#suppression des mots à faible occurence
 	return ' '.join(doc)
-       
-#Creation du corpus
 
-def corpus_fct(texte) :							#nettoyage et concaténation de tous les documents présents dans le texte cible
-	corpus = []
-	for doc in texte :
-		corpus.append(clean_fct(doc))
-	return corpus
-
-#---------------------------------------------------------------------------------------------------------------------------------------#
+#----------------------------------------------------------------------------------------------------------------------#
 	
 #Extraction des features par TfIdf
  
-def tfidf_fct(corpus) :   						#vectorisation par tfidf
-	X_tfidf = model_vect.transform(corpus)			
+def tfidf_fct(doc) :   									#vectorisation par tfidf
+	X_tfidf = model_vect.transform(doc)
 	return X_tfidf
 	
 #Application du modele regression logistique ovr
@@ -86,6 +80,7 @@ def model_fct(X_tfidf) :
 	return prediction
 
 #Identification des tags
+
 def labels(prediction, labels):
     tags_pred = []
     for i, is_label in enumerate(prediction[0]):
@@ -97,8 +92,8 @@ def labels(prediction, labels):
     
 #--------------------------------------------------------------------------------------------------------------------------------------# 
   
-def predict_fct(text):
-    corpus = corpus_fct(texte) 						#nettoyage et creation du corpus
+def predict_fct(doc):
+    corpus = corpus_fct(doc)
     prediction = model_fct(X_tfidf)
     predicted_tags = labels(prediction, labels)				#predictions labélisés
     return predicted_tags  

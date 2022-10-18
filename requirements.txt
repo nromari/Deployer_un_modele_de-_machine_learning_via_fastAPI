@@ -1,0 +1,7 @@
+pandas==1.4.3
+pickle==0.7.5
+nltk==3.7
+beautifulsoup4==4.11.1
+sklearn==0.0
+uvicorn==0.18.3
+fastapi==0.85.0
