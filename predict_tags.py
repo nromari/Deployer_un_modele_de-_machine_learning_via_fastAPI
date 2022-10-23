@@ -21,6 +21,7 @@ tags_liste = pd.read_csv('tags_liste.csv')
 model = pickle.load(open('modele_ovr_tfidf.sav', 'rb'))
 model_vect = pickle.load(open('modele_vect_tfidf.sav', 'rb'))
 lemmatizer = WordNetLemmatizer()
+vocab = pd.read_csv('vocab.csv').values.squeeze().tolist()	
 labels = pd.read_csv('labels.csv').values.squeeze().tolist()	
 
 #----------------------------------------------------------------------------------------------------------------------#
@@ -28,74 +29,73 @@ labels = pd.read_csv('labels.csv').values.squeeze().tolist()
 #Nettoyage du document
 
 def clean_fct(doc) :									
-	doc = BeautifulSoup(doc).get_text()				#suppression des balises html
-	doc = doc.lower()								#suppression des majuscules
-	doc = doc.split()										
+	doc = BeautifulSoup(doc,features="html.parser").get_text()				
+	doc = doc.lower()														
+	doc = doc.split()
+	print(doc,1)										
 	
-	doc = [w for w in doc if w not in tags_liste]			#creation du document sans mots tags
-	doc_tags = [w for w in doc if w in tags_liste]			#extraction des mots tags
+	doc = [w for w in doc if w not in tags_liste]			
+	doc_tags = [w for w in doc if w in tags_liste]			
 	doc = ' '.join(doc)										
+	print(doc,2)
 	
-	doc = doc.translate(str.maketrans(						#suppression ciblée des ponctuations
-	string.punctuation, ' '*len(string.punctuation)))
+	doc = doc.translate(str.maketrans(string.punctuation, ' '*len(string.punctuation)))
 	doc = ''.join([i for i in doc if not i.isdigit()])
+	print(doc,3)
 	
-	doc = word_tokenize(doc)							#tokenisation du document
-	doc = [w for w in doc if w not in stop_w]			#suppression des stop words
-	doc = [w for w in doc if len(w) > 2]				#suppression des mots courts
+	doc = word_tokenize(doc)							
+	doc = [w for w in doc if w not in stop_w]			
+	doc = [w for w in doc if len(w) > 2]				
+	print(doc,4)							
     
-	doc_lem = []										#lemmatization
+	doc_lem = []											
 	for w in doc :
-		doc_lem.append(lemmatizer.lemmatize(w))									
-    
-	doc = [*doc, *doc_tags]								#réintégration des mots tags
-    
-	dico_doc = {}										#creation d'un dictionnaire pour le comptage des mots
-	for w in doc :
-		if w in dico_doc :
-			dico_doc[w] += 1
-		else :
-			dico_doc[w] = 1
-    
-	min_freq_w = []										#creation de la liste des mots les moins fréquents
-	for w in dico_doc :
-		if dico_doc[w] < 3 :
-			min_freq_w.append(w)
-    
-	doc = [w for w in doc if w not in min_freq_w]		#suppression des mots à faible occurence
+		doc_lem.append(lemmatizer.lemmatize(w))
+	print(doc_lem,5)
+	
+	doc = [w for w in doc_lem if w in vocab]
+	print(doc,6)				
+										
+	doc = [*doc, *doc_tags]
+	print(doc,7)
+									
 	return ' '.join(doc)
 
 #----------------------------------------------------------------------------------------------------------------------#
 	
 #Extraction des features par TfIdf
  
-def tfidf_fct(doc) :   									#vectorisation par tfidf
-	X_tfidf = model_vect.transform(doc)
+def tfidf_fct(doc) :   									
+	X_tfidf = model_vect.transform([doc])
+	print(X_tfidf,8)
 	return X_tfidf
 	
 #Application du modele regression logistique ovr
 
 def model_fct(X_tfidf) :
 	prediction = model.predict(X_tfidf)
+	print(prediction,9)
 	return prediction
 
 #Identification des tags
 
-def labels(prediction, labels):
+def labels_fct(prediction, labels):
     tags_pred = []
     for i, is_label in enumerate(prediction[0]):
         if is_label == 0:
             pass
         else :
             tags_pred.append(labels[i])
+    print(tags_pred,10)
     return tags_pred
     
-#--------------------------------------------------------------------------------------------------------------------------------------# 
+#----------------------------------------------------------------------------------------------------------------------------------# 
   
 def predict_fct(doc):
-    corpus = corpus_fct(doc)
+    corpus = clean_fct(doc)
+    X_tfidf = tfidf_fct(corpus)
     prediction = model_fct(X_tfidf)
-    predicted_tags = labels(prediction, labels)				#predictions labélisés
+    predicted_tags = labels_fct(prediction, labels)
     return predicted_tags  
   
   

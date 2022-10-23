@@ -7,7 +7,7 @@ class Application(BaseModel):
     question: str
 
 class Decision(BaseModel):
-    predicted_tags: str
+    predicted_tags: list[str]
 
 app = FastAPI()
 
